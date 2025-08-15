@@ -1,0 +1,37 @@
+name = "globalgateway"
+main = "src/index.js"
+compatibility_date = "2025-07-12"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+vars = { API_SECRET = "47ce9d9db81359845a4c27677545c59689f2c" }
+
+[[env.production.d1_databases]]
+binding = "DB_TRANSACTIONHISTORY"
+database_name = "global-db"
+database_id = "c793d69f-b032-47e3-9ffa-d1ecded066a0"
+
+[[env.production.d1_databases]]
+binding = "DB_TRANSFERS"
+database_name = "transfers-db"
+database_id = "c2b526e4-ae62-4cfb-b5d3-d91ce104cb36"
+
+[[env.production.d1_databases]]
+binding = "DB_VAULT"
+database_name = "vault__pgroll_new_xata_id_key-db"
+database_id = "fb8be6f1-9c24-4e74-a152-3cc572712605"
+
+[[env.production.d1_databases]]
+binding = "DB_PURCHASE"
+database_name = "purchase-db"
+database_id = "6df2645d-9969-4ab9-aabc-33c1828cb838"
+
+[[env.production.d1_databases]]
+binding = "DB_SWAP"
+database_name = "swap-db"
+database_id = "2bbf90cb-668a-4c56-84ff-85a7d1766a35"
+
+[[env.production.d1_databases]]
+binding = "DB_REDEMPTIONS"
+database_name = "redemption-db"
+database_id = "32863e7a-84d5-4901-bfea-2b1899364bff"
