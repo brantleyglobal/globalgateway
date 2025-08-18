@@ -183,7 +183,7 @@ const methods = {
   // 🔹 Swap
   executeSwap: async (params, env) => {
     const keys = [
-      "contractaddress", "useraddress", "direction", "amountin", "amountout", "exchangerate",
+      "contractaddress", "useraddress", "selectedtoken", "direction", "amountin", "amountout", "exchangerate",
       "txhash", "signature", "calldata", "status", "chainstatus", "timestamp",
       "queuedat", "processedat", "priority", "retrycount", "notes", "smartwallet"
     ];

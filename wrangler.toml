@@ -4,7 +4,8 @@ compatibility_date = "2025-07-12"
 compatibility_flags = ["nodejs_compat"]
 
 [env.production]
-vars = { API_SECRET = "47ce9d9db81359845a4c27677545c59689f2c" }
+name = "globalgateway"
+vars = { API_SECRET = "cLrkn53NZ50KL7A-qrFKiYVKB4-ob2RSEqUzoqve" }
 
 [[env.production.d1_databases]]
 binding = "DB_TRANSACTIONHISTORY"
