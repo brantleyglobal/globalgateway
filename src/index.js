@@ -2,9 +2,8 @@ const methods = {
   // 🔹 TransactionHistory
   createTransaction: async (params, env) => {
    const keys = [
-      "txhash", "contractaddress", "calldata", "signature", "sender", "smartwallet", "poolamount",
-      "token", "amount", "status", "chainstatus", "queuedat", "quarter",
-      "processedat", "priority", "retrycount", "receipthash", "notes", "timestamp"
+      "txhash", "txtype", "", "sender", "token", "amount", "status", "chainstatus",
+      "quarter", "processedat", "retrycount", "receipthash", "notes", "timestamp"
     ];
 
     const placeholders = keys.map(() => "?").join(", ");
@@ -37,9 +36,9 @@ const methods = {
   // 🔹 Transfers
   createTransfer: async (params, env) => {
     const keys = [
-      "txhash", "contractaddress", "calldata", "signature", "sender", "smartwallet",
+      "txhash", "contractaddress", "sender", "timestamp",
       "recipient", "token", "amount", "status", "chainstatus", "queuedat",
-      "processedat", "priority", "retrycount", "receipthash", "notes", "timestamp"
+      "processedat", "priority", "retrycount", "receipthash", "notes"
     ];
 
     const placeholders = keys.map(() => "?").join(", ");
@@ -123,9 +122,9 @@ const methods = {
   vaultCommit: async (params, env) => {
     const keys = [
       "contractaddress", "useraddress", "depositamount", "paymentmethod",
-      "ispending", "isclosed", "txhash", "signature", "depositstarttime",
-      "calldata", "status", "chainstatus", "timestamp", "queuedat", "processedat",
-      "retrycount", "notes", "receipthash", "smartwallet", "committedquarters"
+      "ispending", "isclosed", "txhash", "depositstarttime",
+      "status", "chainstatus", "timestamp", "queuedat", "processedat",
+      "retrycount", "notes", "receipthash", "committedquarters"
     ];
     await env.DB_VAULT.prepare(`
       INSERT INTO vault (${keys.join(", ")})
@@ -138,10 +137,10 @@ const methods = {
   // 🔹 Purchase
   recordPurchase: async (params, env) => {
     const keys = [
-      "contractaddress", "useraddress", "asset", "amount", "quantity", "paymentmethod",
-      "timestamp", "txhash", "signature", "calldata", "status", "chainstatus",
+      "contractaddress", "useraddress", "asset", "amount", "quantity",
+      "timestamp", "txhash", "paymentmethod", "status", "chainstatus",
       "queuedat", "processedat", "priority", "retrycount", "notes",
-      "receipthash", "smartwallet"
+      "receipthash", "configs", "region", "exchangerate"
     ];
     await env.DB_PURCHASE.prepare(`
       INSERT INTO purchases (${keys.join(", ")})
@@ -178,15 +177,14 @@ const methods = {
     return { purchases: rows.results };
   },
 
-
-
   // 🔹 Swap
   executeSwap: async (params, env) => {
     const keys = [
-      "contractaddress", "useraddress", "selectedtoken", "direction", "amountin", "amountout", "exchangerate",
-      "txhash", "signature", "calldata", "status", "chainstatus", "timestamp",
-      "queuedat", "processedat", "priority", "retrycount", "notes", "smartwallet"
+      "contractaddress", "useraddress", "initiator", "counterparty", "amounta", "amountb",
+      "txhash","paymentmethod", "status", "chainstatus", "timestamp", "refund",
+      "newcontract", "queuedat", "processedat", "priority", "retrycount", "notes"
     ];
+    
     const placeholders = keys.map(() => "?").join(", ");
     const values = keys.map(k => params[k]);
 
@@ -201,36 +199,44 @@ const methods = {
   getSwap: async (params, env) => {
     const { useraddress, chainstatus, page = 1, pageSize = 10, sortBy = "timestamp", sortOrder = "desc" } = params;
 
-    // Enforce only one filter
     if (useraddress && chainstatus) {
       return { error: "Please provide only one filter: useraddress or chainstatus" };
     }
 
-    let query = "";
-    let value;
+    let query = `SELECT * FROM swaps`;
+    let filters = [];
+    let values = [];
 
     if (useraddress) {
-      query = `SELECT * FROM purchases WHERE useraddress = ?`;
-      value = useraddress;
+      filters.push("(useraddress = ? OR initiator = ? OR counterparty = ?)");
+      values.push(useraddress, useraddress, useraddress); 
     } else if (chainstatus) {
-      query = `SELECT * FROM purchases WHERE chainstatus = ?`;
-      value = chainstatus;
+      filters.push("chainstatus = ?");
+      values.push(chainstatus);
     } else {
       return { error: "Missing query parameter" };
     }
 
-    const rows = await env.DB_SWAP.prepare(query).bind(value).all();
+    if (filters.length > 0) {
+      query += ` WHERE ${filters.join(" AND ")}`;
+    }
+
+    query += ` ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`;
+
+    values.push(pageSize, (page - 1) * pageSize);
+
+    const rows = await env.DB_SWAP.prepare(query).bind(...values).all();
+
     return { swaps: rows.results };
   },
-
 
   // 🔹 Redemptions
   redeemToken: async (params, env) => {
     const keys = [
-      "contractaddress", "useraddress", "vaultid", "amount", "paymentmethod",
-      "timestamp", "txhash", "signature", "calldata", "status", "chainstatus",
+      "contractaddress", "useraddress", "amount", "chainstatus",
+      "timestamp", "txhash", "asset", "status",
       "queuedat", "processedat", "priority", "retrycount", "notes",
-      "receipthash", "smartwallet"
+      "receipthash"
     ];
     await env.DB_REDEMPTIONS.prepare(`
       INSERT INTO redemptions (${keys.join(", ")})
@@ -251,10 +257,10 @@ const methods = {
     let value;
 
     if (useraddress) {
-      query = `SELECT * FROM purchases WHERE useraddress = ?`;
+      query = `SELECT * FROM redemption WHERE useraddress = ?`;
       value = useraddress;
     } else if (chainstatus) {
-      query = `SELECT * FROM purchases WHERE chainstatus = ?`;
+      query = `SELECT * FROM redemption WHERE chainstatus = ?`;
       value = chainstatus;
     } else {
       return { error: "Missing query parameter" };
@@ -309,7 +315,7 @@ export default {
         });
       }
 
-      // 🚀 Step 4: Call method
+      //Step 4: Call method
       const result = await methods[method](params, env);
       return Response.json({
         jsonrpc: "2.0",
