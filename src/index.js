@@ -230,6 +230,59 @@ const methods = {
     return { swaps: rows.results };
   },
 
+  // 🔹 Acquisitions
+  acquisitionCommit: async (params, env) => {
+    const keys = [
+      "contractaddress", "useraddress", "gbdout", "stablein",
+      "txhash", "paymentmethod", "status", "receipthash", "chainstatus",
+      "processedat", "notes",  "timestamp",
+    ];
+    
+    const placeholders = keys.map(() => "?").join(", ");
+    const values = keys.map(k => params[k]);
+
+    await env.DB_ACQUISITION.prepare(`
+      INSERT INTO acquisitions (${keys.join(", ")})
+      VALUES (${placeholders})
+    `).bind(...values).run();
+
+    return { acquisitioned: true };
+  },
+
+  getAcquisition: async (params, env) => {
+    const { useraddress, chainstatus, page = 1, pageSize = 10, sortBy = "timestamp", sortOrder = "desc" } = params;
+
+    if (useraddress) {
+      return { error: "Please provide only one filter: useraddress or chainstatus" };
+    }
+
+    let query = `SELECT * FROM acquisitions`;
+    let filters = [];
+    let values = [];
+
+    if (useraddress) {
+      filters.push("(useraddress = ?)");
+      values.push(useraddress, useraddress, useraddress); 
+    } else if (chainstatus) {
+      filters.push("chainstatus = ?");
+      values.push(chainstatus);
+    } else {
+      return { error: "Missing query parameter" };
+    }
+
+    if (filters.length > 0) {
+      query += ` WHERE ${filters.join(" AND ")}`;
+    }
+
+    query += ` ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`;
+
+    values.push(pageSize, (page - 1) * pageSize);
+
+    const rows = await env.DB_ACQUISITION.prepare(query).bind(...values).all();
+
+    return { acquisitions: rows.results };
+  },  
+
   // 🔹 Redemptions
   redeemToken: async (params, env) => {
     const keys = [
@@ -238,6 +291,7 @@ const methods = {
       "queuedat", "processedat", "priority", "retrycount", "notes",
       "receipthash"
     ];
+
     await env.DB_REDEMPTIONS.prepare(`
       INSERT INTO redemptions (${keys.join(", ")})
       VALUES (${keys.map(() => "?").join(", ")})
@@ -257,10 +311,10 @@ const methods = {
     let value;
 
     if (useraddress) {
-      query = `SELECT * FROM redemption WHERE useraddress = ?`;
+      query = `SELECT * FROM redemptions WHERE useraddress = ?`;
       value = useraddress;
     } else if (chainstatus) {
-      query = `SELECT * FROM redemption WHERE chainstatus = ?`;
+      query = `SELECT * FROM redemptions WHERE chainstatus = ?`;
       value = chainstatus;
     } else {
       return { error: "Missing query parameter" };

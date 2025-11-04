@@ -36,3 +36,8 @@ database_id = "2bbf90cb-668a-4c56-84ff-85a7d1766a35"
 binding = "DB_REDEMPTIONS"
 database_name = "redemption-db"
 database_id = "32863e7a-84d5-4901-bfea-2b1899364bff"
+
+[[env.production.d1_databases]]
+binding = "DB_ACQUISITION"
+database_name = "acquisition-db"
+database_id = "8c0b8be6-546e-4ed1-8a01-0cbd80f9a898"
