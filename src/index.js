@@ -124,10 +124,58 @@ const methods = {
       "contractaddress", "useraddress", "depositamount", "paymentmethod",
       "ispending", "isclosed", "txhash", "depositstarttime",
       "status", "chainstatus", "timestamp", "queuedat", "processedat",
-      "retrycount", "notes", "receipthash", "committedquarters"
+      "retrycount", "notes", "receipthash", "committedquarters","venture"
     ];
     await env.DB_VAULT.prepare(`
       INSERT INTO vault (${keys.join(", ")})
+      VALUES (${keys.map(() => "?").join(", ")})
+    `).bind(...keys.map(k => params[k])).run();
+    return { recorded: true };
+  },
+
+  // 🔹 Vault
+  getRegion: async (params, env) => {
+    const { useraddress, depositstarttime, chainstatus, committedquarters, page = 1, pageSize = 10, sortBy = "timestamp", sortOrder = "desc" } = params;
+
+    // Enforce only one filter
+    if (useraddress && depositstarttime) {
+      return { error: "Please provide only one filter: useraddress or depositstarttime" };
+    }
+
+    let query = "";
+    let value;
+
+    if (useraddress) {
+      query = `SELECT * FROM vault WHERE useraddress = ?`;
+      value = useraddress;
+    } else if (depositstarttime) {
+      query = `SELECT * FROM vault WHERE depositstarttime = ?`;
+      value = depositstarttime;
+    } else if (committedquarters) {
+      query = `SELECT * FROM vault WHERE venture = ?`;
+      value = venture;
+    } else if (chainstatus) {
+      query = `SELECT * FROM vault WHERE chainstatus = ?`;
+      value = chainstatus;
+    } else {
+      return { error: "Missing query parameter" };
+    }
+
+    const rows = await env.DB_INFRA.prepare(query).bind(value).all();
+    return { infra: rows.results };
+  },
+
+
+  // 🔹 Commit
+  regionCommit: async (params, env) => {
+    const keys = [
+      "contractaddress", "useraddress", "depositamount", "paymentmethod",
+      "ispending", "isclosed", "txhash", "depositstarttime",
+      "status", "chainstatus", "timestamp", "queuedat", "processedat",
+      "retrycount", "notes", "receipthash", "committedquarters"
+    ];
+    await env.DB_INFRA.prepare(`
+      INSERT INTO infra (${keys.join(", ")})
       VALUES (${keys.map(() => "?").join(", ")})
     `).bind(...keys.map(k => params[k])).run();
     return { recorded: true };

@@ -19,8 +19,13 @@ database_id = "c2b526e4-ae62-4cfb-b5d3-d91ce104cb36"
 
 [[env.production.d1_databases]]
 binding = "DB_VAULT"
-database_name = "vault__pgroll_new_xata_id_key-db"
+database_name = "vault-db"
 database_id = "fb8be6f1-9c24-4e74-a152-3cc572712605"
+
+[[env.production.d1_databases]]
+binding = "DB_INFRA"
+database_name = "infra-db"
+database_id = "39abcc91-9953-4878-a8e0-5189f00be168"
 
 [[env.production.d1_databases]]
 binding = "DB_PURCHASE"
