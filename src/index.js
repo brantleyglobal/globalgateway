@@ -64,7 +64,8 @@ const methods = {
     let values = [];
 
     if (useraddress) {
-      filters.push("(sender = ? OR recipient = ?)");
+      // normalize comparison by lowering both sides
+      filters.push("(LOWER(sender) = LOWER(?) OR LOWER(recipient) = LOWER(?))");
       values.push(useraddress, useraddress);
     }
 
@@ -94,26 +95,35 @@ const methods = {
       return { error: "Please provide only one filter: useraddress or depositstarttime" };
     }
 
-    let query = "";
-    let value;
+    let query = `SELECT * FROM vault`;
+    let filters = [];
+    let values = [];
 
     if (useraddress) {
-      query = `SELECT * FROM vault WHERE useraddress = ?`;
-      value = useraddress;
+      // Normalize comparison by lowering both sides
+      filters.push("LOWER(useraddress) = LOWER(?)");
+      values.push(useraddress);
     } else if (depositstarttime) {
-      query = `SELECT * FROM vault WHERE depositstarttime = ?`;
-      value = depositstarttime;
+      filters.push("depositstarttime = ?");
+      values.push(depositstarttime);
     } else if (committedquarters) {
-      query = `SELECT * FROM vault WHERE committedquarters = ?`;
-      value = committedquarters;
+      filters.push("committedquarters = ?");
+      values.push(committedquarters);
     } else if (chainstatus) {
-      query = `SELECT * FROM vault WHERE chainstatus = ?`;
-      value = chainstatus;
+      filters.push("chainstatus = ?");
+      values.push(chainstatus);
     } else {
       return { error: "Missing query parameter" };
     }
 
-    const rows = await env.DB_VAULT.prepare(query).bind(value).all();
+    if (filters.length > 0) {
+      query += ` WHERE ${filters.join(" AND ")}`;
+    }
+
+    query += ` ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`;
+    values.push(pageSize, (page - 1) * pageSize);
+
+    const rows = await env.DB_VAULT.prepare(query).bind(...values).all();
     return { vault: rows.results };
   },
 
@@ -133,7 +143,7 @@ const methods = {
     return { recorded: true };
   },
 
-  // 🔹 Vault
+  // 🔹 Region
   getRegion: async (params, env) => {
     const { useraddress, depositstarttime, chainstatus, committedquarters, page = 1, pageSize = 10, sortBy = "timestamp", sortOrder = "desc" } = params;
 
@@ -142,29 +152,37 @@ const methods = {
       return { error: "Please provide only one filter: useraddress or depositstarttime" };
     }
 
-    let query = "";
-    let value;
+    let query = `SELECT * FROM infra`;
+    let filters = [];
+    let values = [];
 
     if (useraddress) {
-      query = `SELECT * FROM vault WHERE useraddress = ?`;
-      value = useraddress;
+      // Normalize comparison by lowering both sides
+      filters.push("LOWER(useraddress) = LOWER(?)");
+      values.push(useraddress);
     } else if (depositstarttime) {
-      query = `SELECT * FROM vault WHERE depositstarttime = ?`;
-      value = depositstarttime;
+      filters.push("depositstarttime = ?");
+      values.push(depositstarttime);
     } else if (committedquarters) {
-      query = `SELECT * FROM vault WHERE venture = ?`;
-      value = venture;
+      filters.push("committedquarters = ?");
+      values.push(committedquarters);
     } else if (chainstatus) {
-      query = `SELECT * FROM vault WHERE chainstatus = ?`;
-      value = chainstatus;
+      filters.push("chainstatus = ?");
+      values.push(chainstatus);
     } else {
       return { error: "Missing query parameter" };
     }
 
-    const rows = await env.DB_INFRA.prepare(query).bind(value).all();
+    if (filters.length > 0) {
+      query += ` WHERE ${filters.join(" AND ")}`;
+    }
+
+    query += ` ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`;
+    values.push(pageSize, (page - 1) * pageSize);
+
+    const rows = await env.DB_INFRA.prepare(query).bind(...values).all();
     return { infra: rows.results };
   },
-
 
   // 🔹 Commit
   regionCommit: async (params, env) => {
@@ -206,7 +224,8 @@ const methods = {
     let values = [];
 
     if (useraddress) {
-      filters.push("useraddress = ?");
+      // Normalize comparison by lowering both sides
+      filters.push("LOWER(useraddress) = LOWER(?)");
       values.push(useraddress);
     } else if (chainstatus) {
       filters.push("chainstatus = ?");
@@ -256,8 +275,9 @@ const methods = {
     let values = [];
 
     if (useraddress) {
-      filters.push("(useraddress = ? OR initiator = ? OR counterparty = ?)");
-      values.push(useraddress, useraddress, useraddress); 
+      // Normalize comparison by lowering both sides
+      filters.push("(LOWER(useraddress) = LOWER(?) OR LOWER(initiator) = LOWER(?) OR LOWER(counterparty) = LOWER(?))");
+      values.push(useraddress, useraddress, useraddress);
     } else if (chainstatus) {
       filters.push("chainstatus = ?");
       values.push(chainstatus);
@@ -300,7 +320,7 @@ const methods = {
   getAcquisition: async (params, env) => {
     const { useraddress, chainstatus, page = 1, pageSize = 10, sortBy = "timestamp", sortOrder = "desc" } = params;
 
-    if (useraddress) {
+    if (useraddress && chainstatus) {
       return { error: "Please provide only one filter: useraddress or chainstatus" };
     }
 
@@ -309,8 +329,9 @@ const methods = {
     let values = [];
 
     if (useraddress) {
-      filters.push("(useraddress = ?)");
-      values.push(useraddress, useraddress, useraddress); 
+      // Normalize comparison by lowering both sides
+      filters.push("LOWER(useraddress) = LOWER(?)");
+      values.push(useraddress);
     } else if (chainstatus) {
       filters.push("chainstatus = ?");
       values.push(chainstatus);
