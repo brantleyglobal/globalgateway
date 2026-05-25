@@ -203,7 +203,7 @@ const methods = {
     const keys = [
       "contractaddress", "useraddress", "depositamount", "paymentmethod",
       "ispending", "isclosed", "txhash", "depositstarttime", "exchangerate",
-      "status", "chainstatus", "timestamp", "queuedat", "processedat", "key",
+      "status", "chainstatus", "timestamp", "queuedat", "processedat",
       "retrycount", "notes", "receipthash", "committedquarters","venture"
     ];
     await env.DB_VAULT.prepare(`
